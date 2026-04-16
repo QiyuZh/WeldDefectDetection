@@ -1,0 +1,9 @@
+path: data/dataset
+train: images/train
+val: images/val
+names:
+  0: crack
+  1: hole
+  2: unwelded
+  3: offset_weld
+

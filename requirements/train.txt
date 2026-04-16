@@ -1,0 +1,7 @@
+-r base.txt
+torch>=2.2.0
+torchvision>=0.17.0
+ultralytics>=8.3.0
+onnx>=1.16.0
+onnxsim>=0.4.36
+

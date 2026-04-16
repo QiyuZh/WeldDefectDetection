@@ -1,0 +1,22 @@
+name: weld-qc-cpu
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip=24.2
+  - numpy=1.26.*
+  - pyyaml=6.0.*
+  - opencv=4.10.*
+  - pip:
+      - ultralytics==8.3.0
+      - onnx==1.16.2
+      - onnxsim==0.4.36
+      - onnxruntime==1.19.2
+      - PySide6==6.7.2
+      - fastapi==0.115.0
+      - "uvicorn[standard]==0.30.6"
+      - python-multipart==0.0.9
+      - pyinstaller==6.10.0
+      - ruff==0.6.8
+
