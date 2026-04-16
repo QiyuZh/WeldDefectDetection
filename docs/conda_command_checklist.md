@@ -1,13 +1,18 @@
 # 基于 Conda 的完整安装与启动命令清单
 
-下面默认你在 `D:\WeldDefectDetection` 项目根目录下执行命令，终端使用 PowerShell。
+下面默认你已经切换到项目根目录，终端使用 PowerShell。
+
+如果你当前不在仓库根目录，先手动执行：
+
+```powershell
+Set-Location <项目根目录>
+```
 
 ## 1. 首次创建 GPU 环境
 
 推荐正式开发、训练、导出、桌面端演示都用这个环境。
 
 ```powershell
-cd D:\WeldDefectDetection
 conda env create -f conda\environment.gpu.yml
 conda activate weld-qc-gpu
 ```
@@ -17,7 +22,6 @@ conda activate weld-qc-gpu
 说明你当前机器访问 `pytorch` 的 conda 渠道失败。不要反复硬重试，直接切到下面这套后备方案：
 
 ```powershell
-cd D:\WeldDefectDetection
 conda env remove -n weld-qc-gpu -y
 conda env create -f conda\environment.gpu-pip-torch.yml
 conda activate weld-qc-gpu
@@ -32,7 +36,6 @@ conda activate weld-qc-gpu
 如果你当前机器没有 NVIDIA GPU，或者只想做代码联调，用这个环境。
 
 ```powershell
-cd D:\WeldDefectDetection
 conda env create -f conda\environment.cpu.yml
 conda activate weld-qc-cpu
 ```
@@ -229,7 +232,6 @@ powershell -ExecutionPolicy Bypass -File scripts\package_api.ps1
 ### 日常训练
 
 ```powershell
-cd D:\WeldDefectDetection
 conda activate weld-qc-gpu
 python scripts\train_yolov8.py --config configs\app.yaml
 ```
@@ -237,7 +239,6 @@ python scripts\train_yolov8.py --config configs\app.yaml
 ### 日常桌面端验证
 
 ```powershell
-cd D:\WeldDefectDetection
 conda activate weld-qc-gpu
 python scripts\run_desktop.py --config configs\app.yaml
 ```
@@ -245,7 +246,6 @@ python scripts\run_desktop.py --config configs\app.yaml
 ### 日常 API 验证
 
 ```powershell
-cd D:\WeldDefectDetection
 conda activate weld-qc-gpu
 python scripts\run_api.py --config configs\app.yaml
 ```
@@ -297,7 +297,6 @@ conda remove -n weld-qc-cpu --all
 直接执行下面这组：
 
 ```powershell
-cd D:\WeldDefectDetection
 conda env remove -n weld-qc-gpu -y
 conda env create -f conda\environment.gpu-pip-torch.yml
 conda activate weld-qc-gpu
