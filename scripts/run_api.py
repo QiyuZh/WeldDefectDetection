@@ -9,6 +9,10 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
+from weld_inspector.bootstrap import bootstrap_windows_runtime
+
+bootstrap_windows_runtime()
+
 import uvicorn
 
 from weld_inspector.api import create_app
@@ -28,4 +32,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

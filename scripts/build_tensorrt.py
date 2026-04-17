@@ -29,6 +29,25 @@ def has_module(module_name: str) -> bool:
     return importlib.util.find_spec(module_name) is not None
 
 
+def resolve_trtexec_workspace_arg(trtexec_path: str, workspace_mb: int) -> str:
+    try:
+        completed = subprocess.run(
+            [trtexec_path, "--help"],
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="ignore",
+        )
+    except OSError:
+        return f"--workspace={workspace_mb}"
+
+    help_text = (completed.stdout or "") + (completed.stderr or "")
+    if "--memPoolSize" in help_text:
+        return f"--memPoolSize=workspace:{workspace_mb}"
+    return f"--workspace={workspace_mb}"
+
+
 def main() -> int:
     args = parse_args()
     onnx_path = Path(args.onnx)
@@ -40,11 +59,12 @@ def main() -> int:
 
     trtexec_path = shutil.which(args.trtexec)
     if trtexec_path:
+        workspace_arg = resolve_trtexec_workspace_arg(trtexec_path, args.workspace)
         command = [
             trtexec_path,
             f"--onnx={onnx_path}",
             f"--saveEngine={engine_path}",
-            f"--workspace={args.workspace}",
+            workspace_arg,
             "--skipInference",
         ]
         if args.fp16:

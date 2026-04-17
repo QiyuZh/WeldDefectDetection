@@ -4,8 +4,8 @@ import json
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable
+from ..paths import resolve_app_path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp"}
 
 
@@ -16,10 +16,7 @@ def ensure_dir(path: str | Path) -> Path:
 
 
 def resolve_path(path: str | Path) -> Path:
-    candidate = Path(path)
-    if candidate.is_absolute():
-        return candidate
-    return PROJECT_ROOT / candidate
+    return resolve_app_path(path)
 
 
 def timestamp_string() -> str:
@@ -45,4 +42,3 @@ def write_json(path: str | Path, payload: dict[str, object]) -> Path:
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return target
-

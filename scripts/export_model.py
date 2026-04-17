@@ -19,6 +19,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--opset", type=int, default=13)
     parser.add_argument("--device", default="0")
     parser.add_argument("--half", action="store_true", help="使用 FP16")
+    parser.add_argument("--dynamic", action="store_true", help="导出动态输入尺寸的 ONNX")
     parser.add_argument("--workspace", type=float, default=4.0, help="TensorRT workspace GB")
     parser.add_argument("--output", default=None, help="指定导出产物路径")
     return parser.parse_args()
@@ -42,6 +43,7 @@ def main() -> int:
     if args.format == "onnx":
         export_kwargs["opset"] = args.opset
         export_kwargs["simplify"] = True
+        export_kwargs["dynamic"] = args.dynamic
     if args.format == "engine":
         export_kwargs["workspace"] = args.workspace
     exported_path = model.export(**export_kwargs)

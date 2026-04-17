@@ -43,7 +43,7 @@ def letterbox(
 
 def preprocess_image(
     image: np.ndarray,
-    input_size: int,
+    input_size: int | tuple[int, int],
     use_fp16: bool = False,
 ) -> tuple[np.ndarray, float, tuple[int, int]]:
     padded, ratio, pad = letterbox(image, input_size)

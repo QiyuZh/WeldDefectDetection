@@ -8,16 +8,11 @@ try:
     import yaml
 except ImportError:  # pragma: no cover
     yaml = None
-
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+from .paths import resolve_app_path
 
 
 def resolve_project_path(value: str | Path) -> Path:
-    candidate = Path(value)
-    if candidate.is_absolute():
-        return candidate
-    return PROJECT_ROOT / candidate
+    return resolve_app_path(value)
 
 
 def infer_backend_from_model(model_path: str | Path) -> str:

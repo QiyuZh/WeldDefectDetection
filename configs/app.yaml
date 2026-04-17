@@ -1,26 +1,23 @@
 project_name: weld-qc-system
-
 model:
-  backend: onnx
-  model_path: artifacts/models/lm.onnx
-  class_names:
-    - Geometric defect
-    - Non-fusion defect
-    - crack
-    - porosity
-    - spatters
+  backend: tensorrt
+  model_path: artifacts/models/best_960.trt
+  # class_names:
+  # - Geometric defect
+  # - Non-fusion defect
+  # - crack
+  # - porosity
+  # - spatters
   input_size: 960
   conf_threshold: 0.25
   iou_threshold: 0.45
   device: cuda:0
   use_fp16: true
-
 source:
   kind: image
-  path: ""
+  path: ''
   camera_index: 0
   loop_video: false
-
 runtime:
   save_dir: artifacts/runtime
   save_ng_images: true
@@ -29,18 +26,15 @@ runtime:
   save_annotated_images: true
   line_thickness: 2
   max_queue_size: 4
-
 api:
   host: 0.0.0.0
   port: 18080
   reload_model_on_startup: true
-
 alarm:
   enabled: true
   ng_hold_frames: 1
   ok_text: OK
   ng_text: NG
-
 training:
   data_yaml: data/datasets/data.yaml
   weights: yolov8s.pt
@@ -51,11 +45,12 @@ training:
   patience: 20
   project: artifacts/models
   name: yolov8_train2
-  device: "0"
+  device: '0'
   close_mosaic: 10
-  cache: False
+  cache: false
   lr0: 0.01
   lrf: 0.01
-  cos_lr: True
+  cos_lr: true
   label_smoothing: 0.05
   dropout: 0.05
+  extra_args: {}

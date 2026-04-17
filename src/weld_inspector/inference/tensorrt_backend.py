@@ -11,6 +11,7 @@ from .base import DetectionBackend
 
 @dataclass(slots=True)
 class HostDeviceBuffer:
+    name: str
     host: np.ndarray
     device: object
     shape: tuple[int, ...]
@@ -25,8 +26,9 @@ class TensorRTBackend(DetectionBackend):
             import tensorrt as trt
         except ImportError as exc:  # pragma: no cover
             raise RuntimeError(
-                "未安装 TensorRT / PyCUDA，请执行 `pip install pycuda`，"
-                "并按 NVIDIA 官方文档安装 TensorRT Python 包。"
+                "TensorRT backend requires both TensorRT Python bindings and PyCUDA. "
+                "Install them first, for example with `pip install pycuda`, and make "
+                "sure the NVIDIA TensorRT runtime is available on PATH."
             ) from exc
 
         self._cuda = cuda
@@ -37,39 +39,79 @@ class TensorRTBackend(DetectionBackend):
         with open(settings.model_path, "rb") as engine_file:
             self._engine = self._runtime.deserialize_cuda_engine(engine_file.read())
         if self._engine is None:
-            raise RuntimeError(f"TensorRT 引擎加载失败: {settings.model_path}")
+            raise RuntimeError(f"Failed to deserialize TensorRT engine: {settings.model_path}")
 
         self._context = self._engine.create_execution_context()
+        if self._context is None:
+            raise RuntimeError("Failed to create TensorRT execution context.")
+
         self._stream = cuda.Stream()
         self._bindings: list[int] = []
         self._inputs: list[HostDeviceBuffer] = []
         self._outputs: list[HostDeviceBuffer] = []
+        self._uses_name_based_api = hasattr(self._engine, "num_io_tensors")
         self._allocate_buffers()
 
+    def _input_shape(self) -> tuple[int, int, int, int]:
+        return (1, 3, self.settings.input_size, self.settings.input_size)
+
     def _binding_indices(self) -> list[int]:
+        if self._uses_name_based_api:
+            return []
         return list(range(self._engine.num_bindings))
 
-    def _allocate_buffers(self) -> None:
-        input_shape = (1, 3, self.settings.input_size, self.settings.input_size)
+    def _allocate_buffers_name_based(self) -> None:
+        input_shape = self._input_shape()
+        tensor_mode_input = self._trt.TensorIOMode.INPUT
+
+        for tensor_index in range(self._engine.num_io_tensors):
+            tensor_name = self._engine.get_tensor_name(tensor_index)
+            if self._engine.get_tensor_mode(tensor_name) == tensor_mode_input:
+                self._context.set_input_shape(tensor_name, input_shape)
+
+        for tensor_index in range(self._engine.num_io_tensors):
+            tensor_name = self._engine.get_tensor_name(tensor_index)
+            shape = tuple(int(dim) for dim in self._context.get_tensor_shape(tensor_name))
+            dtype = self._trt.nptype(self._engine.get_tensor_dtype(tensor_name))
+            size = int(np.prod(shape))
+            host = self._cuda.pagelocked_empty(size, dtype)
+            device = self._cuda.mem_alloc(host.nbytes)
+            buffer = HostDeviceBuffer(name=tensor_name, host=host, device=device, shape=shape)
+            self._context.set_tensor_address(tensor_name, int(device))
+
+            if self._engine.get_tensor_mode(tensor_name) == tensor_mode_input:
+                self._inputs.append(buffer)
+            else:
+                self._outputs.append(buffer)
+
+    def _allocate_buffers_binding_based(self) -> None:
+        input_shape = self._input_shape()
         for binding_index in self._binding_indices():
             if self._engine.binding_is_input(binding_index):
                 self._context.set_binding_shape(binding_index, input_shape)
 
         for binding_index in self._binding_indices():
-            shape = tuple(self._context.get_binding_shape(binding_index))
+            name = self._engine.get_binding_name(binding_index)
+            shape = tuple(int(dim) for dim in self._context.get_binding_shape(binding_index))
             dtype = self._trt.nptype(self._engine.get_binding_dtype(binding_index))
             size = int(np.prod(shape))
             host = self._cuda.pagelocked_empty(size, dtype)
             device = self._cuda.mem_alloc(host.nbytes)
-            buffer = HostDeviceBuffer(host=host, device=device, shape=shape)
+            buffer = HostDeviceBuffer(name=name, host=host, device=device, shape=shape)
             self._bindings.append(int(device))
             if self._engine.binding_is_input(binding_index):
                 self._inputs.append(buffer)
             else:
                 self._outputs.append(buffer)
 
+    def _allocate_buffers(self) -> None:
+        if self._uses_name_based_api:
+            self._allocate_buffers_name_based()
+        else:
+            self._allocate_buffers_binding_based()
+
         if not self._inputs or not self._outputs:
-            raise RuntimeError("TensorRT 引擎未找到有效输入或输出绑定。")
+            raise RuntimeError("TensorRT engine does not expose valid input/output tensors.")
 
     def predict(self, image: np.ndarray) -> list[Detection]:
         tensor, ratio, pad = preprocess_image(
@@ -80,7 +122,12 @@ class TensorRTBackend(DetectionBackend):
         input_buffer = self._inputs[0]
         np.copyto(input_buffer.host, tensor.ravel())
         self._cuda.memcpy_htod_async(input_buffer.device, input_buffer.host, self._stream)
-        self._context.execute_async_v2(bindings=self._bindings, stream_handle=self._stream.handle)
+
+        if self._uses_name_based_api and hasattr(self._context, "execute_async_v3"):
+            self._context.execute_async_v3(stream_handle=self._stream.handle)
+        else:
+            self._context.execute_async_v2(bindings=self._bindings, stream_handle=self._stream.handle)
+
         for output_buffer in self._outputs:
             self._cuda.memcpy_dtoh_async(output_buffer.host, output_buffer.device, self._stream)
         self._stream.synchronize()
