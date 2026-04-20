@@ -7,6 +7,7 @@
 - `conda` 完整安装与启动命令清单：`docs/conda_command_checklist.md`
 - `conda` 环境说明：`docs/conda_environment.md`
 - 灰度增强训练与预测流程：`docs/grayscale_workflow.md`
+- Codex 本地记录迁移说明：`docs/codex_migration_guide.md`
 - 新人接手 5 分钟速读版：`docs/directory_guide_quickstart.md`
 - 详细目录说明：`docs/directory_guide.md`
 
