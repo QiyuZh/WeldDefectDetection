@@ -37,10 +37,16 @@ class ConfigTests(unittest.TestCase):
         config_path = case_dir / "app.yaml"
         config = AppConfig()
         config.model.model_path = "artifacts/models/custom.onnx"
+        config.dataset_preprocess.enabled = True
+        config.dataset_preprocess.mode = "grayscale_weld"
+        config.training.best_output_name = "best_gray.pt"
         save_app_config(config, config_path)
         loaded = load_app_config(config_path)
         self.assertEqual(loaded.model.model_path, "artifacts/models/custom.onnx")
         self.assertEqual(loaded.model.effective_backend, "onnx")
+        self.assertTrue(loaded.dataset_preprocess.enabled)
+        self.assertEqual(loaded.dataset_preprocess.mode, "grayscale_weld")
+        self.assertEqual(loaded.training.best_output_name, "best_gray.pt")
 
     @unittest.skipUnless(yaml is not None, "PyYAML not installed")
     def test_load_class_names_from_dataset_yaml_when_missing_in_app_config(self) -> None:

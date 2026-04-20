@@ -1,13 +1,13 @@
 project_name: weld-qc-system
 model:
-  backend: tensorrt
-  model_path: artifacts/models/best_960.trt
-  # class_names:
-  # - Geometric defect
-  # - Non-fusion defect
-  # - crack
-  # - porosity
-  # - spatters
+  backend: ultralytics
+  model_path: D:/WeldDefectDetection/artifacts/models/m_960.pt
+  class_names:
+  - Geometric defect
+  - Non-fusion defect
+  - crack
+  - porosity
+  - spatters
   input_size: 960
   conf_threshold: 0.25
   iou_threshold: 0.45

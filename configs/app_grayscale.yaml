@@ -1,0 +1,72 @@
+project_name: weld-qc-system-grayscale
+model:
+  backend: auto
+  model_path: artifacts/models/best_gray.pt
+  class_names:
+    - Geometric defect
+    - Non-fusion defect
+    - crack
+    - porosity
+    - spatters
+  input_size: 960
+  conf_threshold: 0.25
+  iou_threshold: 0.45
+  device: cuda:0
+  use_fp16: true
+source:
+  kind: image
+  path: ""
+  camera_index: 0
+  loop_video: false
+runtime:
+  save_dir: artifacts/runtime_gray
+  save_ng_images: true
+  save_all_frames: false
+  save_csv_log: true
+  save_annotated_images: true
+  line_thickness: 2
+  max_queue_size: 4
+api:
+  host: 0.0.0.0
+  port: 18081
+  reload_model_on_startup: true
+alarm:
+  enabled: true
+  ng_hold_frames: 1
+  ok_text: OK
+  ng_text: NG
+dataset_preprocess:
+  enabled: true
+  mode: grayscale_weld
+  clahe_clip_limit: 2.5
+  clahe_tile_grid_size: 8
+  blur_kernel_size: 3
+  unsharp_amount: 1.0
+inference_preprocess:
+  enabled: true
+  mode: grayscale_weld
+  clahe_clip_limit: 2.5
+  clahe_tile_grid_size: 8
+  blur_kernel_size: 3
+  unsharp_amount: 1.0
+training:
+  data_yaml: data/datasets_grayscale/data.yaml
+  weights: yolov8s.pt
+  epochs: 150
+  imgsz: 960
+  batch: 4
+  workers: 2
+  patience: 20
+  project: artifacts/models
+  name: yolov8_train_gray
+  device: "0"
+  close_mosaic: 10
+  cache: false
+  lr0: 0.01
+  lrf: 0.01
+  cos_lr: true
+  label_smoothing: 0.05
+  dropout: 0.05
+  best_output_name: best_gray.pt
+  last_output_name: last_gray.pt
+  extra_args: {}

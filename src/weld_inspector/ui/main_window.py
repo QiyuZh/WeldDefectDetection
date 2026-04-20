@@ -112,6 +112,9 @@ class MainWindow(QMainWindow):
         self.source_path_edit.setReadOnly(True)
         self.backend_combo = QComboBox()
         self.backend_combo.addItems(["auto", "ultralytics", "onnx", "tensorrt"])
+        self.inference_mode_combo = QComboBox()
+        self.inference_mode_combo.addItem("彩色原图", "color")
+        self.inference_mode_combo.addItem("灰度增强", "grayscale_weld")
         self.camera_index_spin = QSpinBox()
         self.camera_index_spin.setRange(0, 8)
 
@@ -132,15 +135,17 @@ class MainWindow(QMainWindow):
         control_layout.addWidget(self.reload_button, 2, 2)
         control_layout.addWidget(QLabel("摄像头索引"), 2, 3)
         control_layout.addWidget(self.camera_index_spin, 2, 4)
-        control_layout.addWidget(QLabel("当前输入"), 3, 0)
-        control_layout.addWidget(self.source_path_edit, 3, 1, 1, 4)
+        control_layout.addWidget(QLabel("推理模式"), 3, 0)
+        control_layout.addWidget(self.inference_mode_combo, 3, 1)
+        control_layout.addWidget(QLabel("当前输入"), 4, 0)
+        control_layout.addWidget(self.source_path_edit, 4, 1, 1, 4)
 
         button_row = QHBoxLayout()
         button_row.addWidget(self.image_button)
         button_row.addWidget(self.video_button)
         button_row.addWidget(self.camera_button)
         button_row.addWidget(self.stop_button)
-        control_layout.addLayout(button_row, 4, 0, 1, 5)
+        control_layout.addLayout(button_row, 5, 0, 1, 5)
 
         content_row = QHBoxLayout()
         layout.addLayout(content_row, 1)
@@ -160,16 +165,19 @@ class MainWindow(QMainWindow):
 
         self.status_value = QLabel("待机")
         self.backend_value = QLabel(self.engine.backend_name)
+        self.preprocess_value = QLabel()
         self.fps_value = QLabel("0.0")
         self.defect_value = QLabel("0")
         stat_layout.addWidget(QLabel("状态"), 0, 0)
         stat_layout.addWidget(self.status_value, 0, 1)
         stat_layout.addWidget(QLabel("后端"), 1, 0)
         stat_layout.addWidget(self.backend_value, 1, 1)
-        stat_layout.addWidget(QLabel("FPS"), 2, 0)
-        stat_layout.addWidget(self.fps_value, 2, 1)
-        stat_layout.addWidget(QLabel("缺陷数"), 3, 0)
-        stat_layout.addWidget(self.defect_value, 3, 1)
+        stat_layout.addWidget(QLabel("推理模式"), 2, 0)
+        stat_layout.addWidget(self.preprocess_value, 2, 1)
+        stat_layout.addWidget(QLabel("FPS"), 3, 0)
+        stat_layout.addWidget(self.fps_value, 3, 1)
+        stat_layout.addWidget(QLabel("缺陷数"), 4, 0)
+        stat_layout.addWidget(self.defect_value, 4, 1)
 
         self.result_box = QPlainTextEdit()
         self.result_box.setReadOnly(True)
@@ -177,6 +185,7 @@ class MainWindow(QMainWindow):
 
         self.select_model_button.clicked.connect(self.select_model)
         self.reload_button.clicked.connect(self.reload_model)
+        self.inference_mode_combo.currentIndexChanged.connect(self.apply_inference_mode)
         self.image_button.clicked.connect(self.open_image)
         self.video_button.clicked.connect(self.open_video)
         self.camera_button.clicked.connect(self.open_camera)
@@ -187,6 +196,46 @@ class MainWindow(QMainWindow):
         self.backend_combo.setCurrentText(self.config.model.backend)
         self.camera_index_spin.setValue(self.config.source.camera_index)
         self.backend_value.setText(self.engine.backend_name)
+        self._sync_inference_mode_from_config()
+
+    def _active_inference_mode(self) -> str:
+        if self.config.inference_preprocess.is_active:
+            return self.config.inference_preprocess.mode
+        return "color"
+
+    def _sync_inference_mode_from_config(self) -> None:
+        active_mode = self._active_inference_mode()
+        target_index = self.inference_mode_combo.findData(active_mode)
+        if target_index < 0:
+            target_index = self.inference_mode_combo.findData("color")
+
+        self.inference_mode_combo.blockSignals(True)
+        self.inference_mode_combo.setCurrentIndex(target_index)
+        self.inference_mode_combo.blockSignals(False)
+        self.preprocess_value.setText(self.inference_mode_combo.currentText())
+
+    def apply_inference_mode(self, _index: int | None = None) -> None:
+        previous_enabled = self.config.inference_preprocess.enabled
+        previous_mode = self.config.inference_preprocess.mode
+        selected_mode = self.inference_mode_combo.currentData() or "color"
+        if selected_mode == "color":
+            self.config.inference_preprocess.enabled = False
+            self.config.inference_preprocess.mode = "color"
+        else:
+            self.config.inference_preprocess.enabled = True
+            self.config.inference_preprocess.mode = selected_mode
+
+        try:
+            save_app_config(self.config, self.config_path)
+        except Exception as exc:
+            self.config.inference_preprocess.enabled = previous_enabled
+            self.config.inference_preprocess.mode = previous_mode
+            self._sync_inference_mode_from_config()
+            QMessageBox.critical(self, "推理模式切换失败", str(exc))
+            return
+
+        self.preprocess_value.setText(self.inference_mode_combo.currentText())
+        self._append_message(f"推理模式已切换: {self.inference_mode_combo.currentText()}")
 
     def select_model(self) -> None:
         model_path, _ = QFileDialog.getOpenFileName(

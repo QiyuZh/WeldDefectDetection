@@ -5,6 +5,10 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
+import cv2
+
+from .config import ImagePreprocessSettings
+from .preprocess import apply_image_preprocess
 from .utils.io import ensure_dir, iter_image_files, write_text
 
 
@@ -48,6 +52,7 @@ def build_yolo_dataset(
     class_names: list[str],
     train_ratio: float = 0.8,
     seed: int = 42,
+    preprocess_settings: ImagePreprocessSettings | None = None,
 ) -> DatasetBuildStats:
     image_root = Path(image_dir)
     label_root = Path(label_dir)
@@ -66,10 +71,18 @@ def build_yolo_dataset(
 
     negative_images = 0
     missing_labels = 0
+    active_preprocess = preprocess_settings or ImagePreprocessSettings()
     for split_name, split_items_list in (("train", train_items), ("val", val_items)):
         for image_path in split_items_list:
             destination_image = output_root / "images" / split_name / image_path.name
-            shutil.copy2(image_path, destination_image)
+            if active_preprocess.is_active:
+                image = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
+                if image is None:
+                    raise ValueError(f"Failed to read image for preprocessing: {image_path}")
+                processed = apply_image_preprocess(image, active_preprocess)
+                cv2.imwrite(str(destination_image), processed)
+            else:
+                shutil.copy2(image_path, destination_image)
 
             source_label = label_path_for_image(image_path, label_root)
             destination_label = output_root / "labels" / split_name / f"{image_path.stem}.txt"
@@ -96,4 +109,3 @@ def build_yolo_dataset(
         negative_images=negative_images,
         missing_labels=missing_labels,
     )
-

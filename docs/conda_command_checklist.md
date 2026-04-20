@@ -53,6 +53,48 @@ python scripts\prepare_dataset.py `
   --output-dir data\dataset
 ```
 
+### 3A. 可选：生成灰度增强训练集
+
+如果你当前已经是标准 YOLO 数据集结构，例如 `data/datasets/train|valid|test`，优先用：
+
+```powershell
+conda activate weld-qc-gpu
+python scripts\prepare_grayscale_dataset.py --dataset-dir data\datasets
+```
+
+如果你手头还是原始图片目录和标签目录，再用 raw 模式：
+
+```powershell
+conda activate weld-qc-gpu
+python scripts\prepare_grayscale_dataset.py --image-dir data\raw\images --label-dir data\raw\labels
+```
+
+如果你想用通用脚本手动开启灰度增强：
+
+```powershell
+conda activate weld-qc-gpu
+python scripts\prepare_dataset.py `
+  --image-dir data\raw\images `
+  --label-dir data\raw\labels `
+  --output-dir data\datasets_grayscale `
+  --dataset-config configs\dataset\weld_grayscale.yaml `
+  --preprocess-enabled `
+  --preprocess-mode grayscale_weld
+```
+
+### 3B. 可选：批量导出原图 / 灰度增强对比图
+
+```powershell
+conda activate weld-qc-gpu
+python scripts\compare_preprocess.py `
+  --config configs/app_grayscale.yaml `
+  --dataset-dir data\datasets `
+  --output-dir artifacts\preprocess_compare `
+  --limit 50
+```
+
+这条命令会自动遍历 `train / valid / test` 三个 split，并分别输出到 `artifacts\preprocess_compare\train|valid|test`。如果你只想看单个 split，也可以改成 `--image-dir data\datasets\train\images` 这种单目录模式。
+
 ## 4. 训练模型
 
 按 `configs/app.yaml` 训练：
@@ -60,6 +102,13 @@ python scripts\prepare_dataset.py `
 ```powershell
 conda activate weld-qc-gpu
 python scripts\train_yolov8.py --config configs\app.yaml
+```
+
+按灰度配置训练：
+
+```powershell
+conda activate weld-qc-gpu
+python scripts\train_grayscale_yolov8.py
 ```
 
 临时覆盖参数：
@@ -165,11 +214,27 @@ conda activate weld-qc-gpu
 python scripts\run_desktop.py --config configs\app.yaml
 ```
 
+灰度增强桌面端入口：
+
+```powershell
+conda activate weld-qc-gpu
+python scripts\run_desktop_grayscale.py
+```
+
+桌面端还提供“推理模式”下拉框，可在 `彩色原图` 和 `灰度增强` 间切换。该开关只影响 `inference_preprocess`，不会改动训练数据集。
+
 ## 11. 启动 HTTP 服务
 
 ```powershell
 conda activate weld-qc-gpu
 python scripts\run_api.py --config configs\app.yaml
+```
+
+灰度增强 API 入口：
+
+```powershell
+conda activate weld-qc-gpu
+python scripts\run_api_grayscale.py
 ```
 
 健康检查：
@@ -228,8 +293,8 @@ python scripts\run_desktop.py --config configs\app.yaml
 
 ```powershell
 conda activate weld-qc-gpu
-powershell -ExecutionPolicy Bypass -File scripts\package_desktop.ps1
-powershell -ExecutionPolicy Bypass -File scripts\package_api.ps1
+powershell -ExecutionPolicy Bypass -File scripts\package_desktop.ps1 -PythonExe "$env:CONDA_PREFIX\python.exe" -TensorRtHome "$env:TensorRT_HOME"
+powershell -ExecutionPolicy Bypass -File scripts\package_api.ps1 -PythonExe "$env:CONDA_PREFIX\python.exe" -TensorRtHome "$env:TensorRT_HOME"
 ```
 
 ## 15. 常用最短命令流
@@ -280,14 +345,15 @@ python scripts\run_api.py --config configs\app.yaml
 - `configs/`
 - `artifacts/models/` 下的 `*.pt` / `*.onnx` / `*.trt` / `*.engine`
 - `data/datasets/data.yaml`
+- conda 环境里的 OpenCV / MKL / 运行时 DLL
 - TensorRT 运行时 DLL
 
 直接执行：
 
 ```powershell
 conda activate weld-qc-gpu
-powershell -ExecutionPolicy Bypass -File scripts\package_desktop.ps1
-powershell -ExecutionPolicy Bypass -File scripts\package_api.ps1
+powershell -ExecutionPolicy Bypass -File scripts\package_desktop.ps1 -PythonExe "$env:CONDA_PREFIX\python.exe" -TensorRtHome "$env:TensorRT_HOME"
+powershell -ExecutionPolicy Bypass -File scripts\package_api.ps1 -PythonExe "$env:CONDA_PREFIX\python.exe" -TensorRtHome "$env:TensorRT_HOME"
 ```
 
 生成后的目录就是交付目录，后续请整体拷贝 `dist/weld-inspector` 或 `dist/weld-inspector-api`，不要只拷贝单个 `exe`。

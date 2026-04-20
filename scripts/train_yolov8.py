@@ -138,10 +138,15 @@ def main() -> int:
     model_dir = project_dir
     model_dir.mkdir(parents=True, exist_ok=True)
 
-    for filename in ("best.pt", "last.pt"):
+    output_name_map = {
+        "best.pt": get_config_value(training_cfg, "best_output_name", "best.pt"),
+        "last.pt": get_config_value(training_cfg, "last_output_name", "last.pt"),
+    }
+
+    for filename, output_name in output_name_map.items():
         source = weights_dir / filename
         if source.exists():
-            target = model_dir / filename
+            target = model_dir / output_name
             shutil.copy2(source, target)
             print(f"copied: {source} -> {target}")
 

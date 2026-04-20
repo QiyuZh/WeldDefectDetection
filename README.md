@@ -6,6 +6,7 @@
 
 - `conda` 完整安装与启动命令清单：`docs/conda_command_checklist.md`
 - `conda` 环境说明：`docs/conda_environment.md`
+- 灰度增强训练与预测流程：`docs/grayscale_workflow.md`
 - 新人接手 5 分钟速读版：`docs/directory_guide_quickstart.md`
 - 详细目录说明：`docs/directory_guide.md`
 
@@ -83,6 +84,21 @@ python scripts\prepare_dataset.py --image-dir data\raw\images --label-dir data\r
 python scripts\train_yolov8.py --config configs\app.yaml
 ```
 
+### 3A. 可选：灰度增强数据集与训练
+
+```powershell
+python scripts\prepare_grayscale_dataset.py --dataset-dir data\datasets
+python scripts\train_grayscale_yolov8.py
+```
+
+如果想先看灰度增强效果，再决定要不要训练：
+
+```powershell
+python scripts\compare_preprocess.py --config configs\app_grayscale.yaml --dataset-dir data\datasets --output-dir artifacts\preprocess_compare --limit 50
+```
+
+这条命令会自动遍历 `train / valid / test` 三个 split，并分别输出到 `artifacts\preprocess_compare\train|valid|test`。如果你只想看某一个 split，也可以改回 `--image-dir data\datasets\train\images` 这种单目录模式。
+
 默认输出目录：
 
 ```text
@@ -101,12 +117,43 @@ python scripts\export_model.py --weights artifacts\models\best.pt --format onnx
 
 ```powershell
 python scripts\build_tensorrt.py --onnx artifacts\models\best.onnx --engine artifacts\models\best.trt
+
+
+python scripts\export_model.py `
+  --weights artifacts\models\best.pt `
+  --format onnx `
+  --imgsz 960 `
+  --output artifacts\models\best_960.onnx
+
+
+python scripts\export_model.py `
+  --weights artifacts\models\best.pt `
+  --format onnx `
+  --imgsz 960 `
+  --dynamic `
+  --output artifacts\models\best_dynamic.onnx
+
+
+conda activate weld-qc-gpu
+python scripts\build_tensorrt.py `
+  --onnx artifacts\models\best_960.onnx `
+  --engine artifacts\models\best_960.trt `
+  --imgsz 960 `
+  --fp16
+
+
 ```
 
 ### 5. 运行桌面端
 
 ```powershell
 python scripts\run_desktop.py --config configs\app.yaml
+```
+
+灰度增强流程可以直接使用：
+
+```powershell
+python scripts\run_desktop_grayscale.py
 ```
 
 ### 6. 启动 HTTP 服务

@@ -1,5 +1,6 @@
 param(
-  [string]$PythonExe
+  [string]$PythonExe,
+  [string]$TensorRtHome
 )
 
 $ErrorActionPreference = "Stop"
@@ -13,6 +14,16 @@ $appRoot = Join-Path $distRoot $appName
 
 . (Join-Path $PSScriptRoot "package_common.ps1")
 $pythonExe = Get-PackagingPython -PreferredPythonExe $PythonExe
+$tensorRtHome = Get-TensorRTHome -PreferredTensorRTHome $TensorRtHome
+
+if ($tensorRtHome) {
+  $tensorRtBin = Join-Path $tensorRtHome "bin"
+  if (Test-Path -LiteralPath $tensorRtBin) {
+    $env:TensorRT_HOME = $tensorRtHome
+    $env:TRT_ROOT = $tensorRtHome
+    $env:PATH = "$tensorRtBin;$env:PATH"
+  }
+}
 
 $pyInstallerArgs = @(
   "-m", "PyInstaller",
@@ -40,8 +51,10 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Copy-DeployAssets -ProjectRoot $projectRoot -AppRoot $appRoot
-Copy-TensorRTRuntime -AppRoot $appRoot
+Copy-CondaRuntime -AppRoot $appRoot -PythonExe $pythonExe
+Copy-TensorRTRuntime -AppRoot $appRoot -TensorRTHome $tensorRtHome
 
 Write-Host "Desktop package created: $appRoot"
 Write-Host "Using python: $pythonExe"
-Write-Host "Copied configs, deploy models, data/datasets/data.yaml, and TensorRT runtime DLLs."
+Write-Host "TensorRT home: $tensorRtHome"
+Write-Host "Copied configs, deploy models, data/datasets/data.yaml, conda runtime DLLs, and TensorRT runtime DLLs."

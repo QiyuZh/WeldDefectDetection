@@ -75,6 +75,20 @@ class AlarmSettings:
 
 
 @dataclass(slots=True)
+class ImagePreprocessSettings:
+    enabled: bool = False
+    mode: str = "color"
+    clahe_clip_limit: float = 2.5
+    clahe_tile_grid_size: int = 8
+    blur_kernel_size: int = 3
+    unsharp_amount: float = 1.0
+
+    @property
+    def is_active(self) -> bool:
+        return self.enabled and self.mode != "color"
+
+
+@dataclass(slots=True)
 class TrainingSettings:
     data_yaml: str = "configs/dataset/weld.yaml"
     weights: str = "yolov8n.pt"
@@ -93,6 +107,8 @@ class TrainingSettings:
     cos_lr: bool = False
     label_smoothing: float = 0.0
     dropout: float = 0.0
+    best_output_name: str = "best.pt"
+    last_output_name: str = "last.pt"
     extra_args: dict[str, Any] = field(default_factory=dict)
 
 
@@ -104,6 +120,8 @@ class AppConfig:
     runtime: RuntimeSettings = field(default_factory=RuntimeSettings)
     api: ApiSettings = field(default_factory=ApiSettings)
     alarm: AlarmSettings = field(default_factory=AlarmSettings)
+    dataset_preprocess: ImagePreprocessSettings = field(default_factory=ImagePreprocessSettings)
+    inference_preprocess: ImagePreprocessSettings = field(default_factory=ImagePreprocessSettings)
     training: TrainingSettings = field(default_factory=TrainingSettings)
 
     def to_dict(self) -> dict[str, Any]:
@@ -187,6 +205,8 @@ def load_app_config(config_path: str | Path) -> AppConfig:
         runtime=_merge_dataclass(RuntimeSettings(), raw.get("runtime")),
         api=_merge_dataclass(ApiSettings(), raw.get("api")),
         alarm=_merge_dataclass(AlarmSettings(), raw.get("alarm")),
+        dataset_preprocess=_merge_dataclass(ImagePreprocessSettings(), raw.get("dataset_preprocess")),
+        inference_preprocess=_merge_dataclass(ImagePreprocessSettings(), raw.get("inference_preprocess")),
         training=training,
     )
 

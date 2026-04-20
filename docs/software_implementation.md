@@ -8,6 +8,13 @@
 - 训练数据目录：`data/dataset/images/{train,val}`、`data/dataset/labels/{train,val}`
 - 数据整理脚本：`scripts/prepare_dataset.py`
 
+当前还新增了一条可选灰度增强链路：
+
+- 灰度训练集目录：`data/dataset_grayscale`
+- 灰度数据整理脚本：`scripts/prepare_grayscale_dataset.py`
+- 灰度预处理模块：`src/weld_inspector/preprocess.py`
+- 灰度数据集配置：`configs/dataset/weld_grayscale.yaml`
+
 职责：
 
 - 检查图像和标签是否成对存在
@@ -19,6 +26,12 @@
 - 训练脚本：`scripts/train_yolov8.py`
 - 评估脚本：`scripts/evaluate.py`
 - 训练配置来源：`configs/app.yaml -> training`
+
+灰度增强训练采用独立入口和独立输出：
+
+- 灰度训练脚本：`scripts/train_grayscale_yolov8.py`
+- 灰度训练配置：`configs/app_grayscale.yaml -> training`
+- 灰度模型默认输出：`artifacts/models/best_gray.pt`
 
 当前策略：
 
@@ -66,6 +79,11 @@
 - 推理引擎：`src/weld_inspector/detector.py`
 - 多后端推理：`src/weld_inspector/inference/`
 
+灰度增强推理支持独立入口：
+
+- 桌面端：`scripts/run_desktop_grayscale.py`
+- HTTP 服务：`scripts/run_api_grayscale.py`
+
 当前支持后端：
 
 - `ultralytics`
@@ -84,6 +102,13 @@
 - OK / NG 判定
 - 截图保存
 - CSV 日志
+
+桌面端当前还新增了“推理模式”切换：
+
+- `彩色原图`
+- `灰度增强`
+
+这个开关只作用于 `inference_preprocess`，不会改动原有彩色训练集和训练模型。
 
 ## 5. 工业相机扩展点
 

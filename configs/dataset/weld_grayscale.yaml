@@ -1,0 +1,17 @@
+path: data/datasets_grayscale
+train: train/images
+val: valid/images
+test: test/images
+nc: 5
+names:
+- Geometric defect
+- Non-fusion defect
+- crack
+- porosity
+- spatters
+roboflow:
+  workspace: fahmi-8ebwu
+  project: welding-defect-final0-cjsyu
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/fahmi-8ebwu/welding-defect-final0-cjsyu/dataset/1

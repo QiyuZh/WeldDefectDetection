@@ -52,7 +52,8 @@ def main() -> int:
     if args.output:
         output_path = Path(args.output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(exported_path, output_path)
+        if exported_path.resolve() != output_path.resolve():
+            shutil.copy2(exported_path, output_path)
         print(f"导出完成: {output_path}")
     else:
         print(f"导出完成: {exported_path}")

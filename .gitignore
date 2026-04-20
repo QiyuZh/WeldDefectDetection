@@ -15,6 +15,7 @@ dist/
 artifacts/logs/
 artifacts/reports/
 artifacts/runtime/
+artifacts/preprocess_compare/
 artifacts/models/*.pt
 artifacts/models/*.onnx
 artifacts/models/*.engine
@@ -24,6 +25,7 @@ data/raw/
 data/dataset/images/
 data/dataset/labels/
 data/datasets/
+data/datasets_grayscale/
 runs/
 yolov8*.pt
 *.log

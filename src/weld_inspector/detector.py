@@ -8,6 +8,7 @@ import numpy as np
 
 from .config import AppConfig
 from .inference.factory import create_backend
+from .preprocess import apply_image_preprocess
 from .schemas import FrameResult
 from .utils.io import ensure_dir, resolve_path, timestamp_string
 from .utils.logging import get_logger
@@ -37,7 +38,8 @@ class InspectionEngine:
 
     def infer(self, frame: np.ndarray, source_name: str, frame_id: int = 0) -> tuple[FrameResult, np.ndarray]:
         started = time.perf_counter()
-        detections = self._backend.predict(frame)
+        model_input = apply_image_preprocess(frame, self.config.inference_preprocess)
+        detections = self._backend.predict(model_input)
         elapsed_ms = (time.perf_counter() - started) * 1000
         fps = 1000.0 / elapsed_ms if elapsed_ms > 0 else 0.0
         status = self.config.alarm.ng_text if detections else self.config.alarm.ok_text
@@ -110,4 +112,3 @@ class InspectionEngine:
 
     def close(self) -> None:
         self._backend.close()
-
